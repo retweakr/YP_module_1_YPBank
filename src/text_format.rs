@@ -1,10 +1,11 @@
+//! Модуль для работы с текстовым форматом YPBankText.
+//!
+//! Текстовый формат представляет транзакции в виде блоков "ключ: значение".
+
 use std::io::{BufRead, BufReader, Write, Read};
 use crate::{Transaction, TxType, TxStatus, Result, ParserError};
 
-/// Парсит транзакции из текстового формата YPBankText.
-/// 
-/// Мы используем `<R: Read>`, чтобы функция могла принимать что угодно:
-/// файл, строку (Cursor) или поток из интернета. Это как "interface" в TS.
+/// Читает транзакции из текстового потока.
 pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
     let mut transactions = Vec::new();
     
@@ -96,8 +97,7 @@ fn parse_block(lines: &[String]) -> Result<Transaction> {
     })
 }
 
-/// Записывает транзакции обратно в текст.
-/// <W: Write> позволяет писать в файл, в консоль или в память.
+/// Записывает транзакции в текстовый поток.
 pub fn write_to<W: Write>(mut writer: W, transactions: &[Transaction]) -> Result<()> {
     for (i, tx) in transactions.iter().enumerate() {
         writeln!(writer, "# Запись {}", i + 1)?;

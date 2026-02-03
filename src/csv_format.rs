@@ -1,8 +1,11 @@
+//! Модуль для работы с CSV форматом YPBankCsv.
+//!
+//! CSV — текстовый формат, где данные разделены запятыми.
+
 use std::io::{BufRead, BufReader, Write, Read};
 use crate::{Transaction, TxType, TxStatus, Result, ParserError};
 
-/// Парсит транзакции из CSV формата.
-/// CSV — это просто строки, где значения разделены запятыми.
+/// Читает транзакции из CSV потока.
 pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
     let mut transactions = Vec::new();
     let buf_reader = BufReader::new(reader);
@@ -57,7 +60,7 @@ pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
     Ok(transactions)
 }
 
-/// Записывает транзакции в CSV.
+/// Записывает транзакции в CSV поток.
 pub fn write_to<W: Write>(mut writer: W, transactions: &[Transaction]) -> Result<()> {
     // Пишем заголовок
     writeln!(writer, "TX_ID,TX_TYPE,FROM_USER_ID,TO_USER_ID,AMOUNT,TIMESTAMP,STATUS,DESCRIPTION")?;

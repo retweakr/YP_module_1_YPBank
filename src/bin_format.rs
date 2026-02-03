@@ -1,11 +1,14 @@
+//! Модуль для работы с бинарным форматом YPBankBin.
+//!
+//! Бинарный формат обеспечивает наиболее компактное представление данных.
+
 use std::io::{Write, Read};
 use crate::{Transaction, TxType, TxStatus, Result, ParserError};
 
-/// Бинарный формат — это когда данные пишутся прямо в байтах, а не как текст.
-/// Это компактнее и быстрее, но "глазами" такой файл не прочитать.
-/// Все числа здесь пишутся в формате Big-Endian (BE).
+/// Магическое число для идентификации формата.
 const MAGIC: &[u8; 4] = b"YPBN";
 
+/// Читает транзакции из бинарного потока.
 pub fn from_read<R: Read>(mut reader: R) -> Result<Vec<Transaction>> {
     let mut transactions = Vec::new();
 
@@ -91,6 +94,7 @@ pub fn from_read<R: Read>(mut reader: R) -> Result<Vec<Transaction>> {
     Ok(transactions)
 }
 
+/// Записывает список транзакций в бинарный поток.
 pub fn write_to<W: Write>(mut writer: W, transactions: &[Transaction]) -> Result<()> {
     for tx in transactions {
         // Пишем MAGIC и временный размер (посчитаем ниже)

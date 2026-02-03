@@ -3,19 +3,5 @@
 version = 4
 
 [[package]]
-name = "comparer"
-version = "0.1.0"
-dependencies = [
- "parser",
-]
-
-[[package]]
-name = "converter"
-version = "0.1.0"
-dependencies = [
- "parser",
-]
-
-[[package]]
-name = "parser"
+name = "ypbank_tools"
 version = "0.1.0"

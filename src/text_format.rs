@@ -1,11 +1,9 @@
-//! Модуль для работы с текстовым форматом YPBankText.
-//!
-//! Текстовый формат представляет транзакции в виде блоков "ключ: значение".
+//! Блоки «ключ: значение», пустая строка между. # — комментарий.
 
 use std::io::{BufRead, BufReader, Write, Read};
 use crate::{Transaction, TxType, TxStatus, Result, ParserError};
 
-/// Читает транзакции из текстового потока.
+/// Блок до пустой строки = одна транзакция.
 pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
     let mut transactions = Vec::new();
     let buf_reader = BufReader::new(reader);
@@ -32,7 +30,7 @@ pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
     Ok(transactions)
 }
 
-/// Внутренняя функция для превращения списка строк "ключ: значение" в структуру Transaction.
+/// Строки KEY: value → Transaction.
 fn parse_block(lines: &[String]) -> Result<Transaction> {
     let mut tx_id = None;
     let mut tx_type = None;
@@ -85,7 +83,7 @@ fn parse_block(lines: &[String]) -> Result<Transaction> {
     })
 }
 
-/// Записывает транзакции в текстовый поток.
+/// Пишем блоками, между блоками пустая строка.
 pub fn write_to<W: Write>(mut writer: W, transactions: &[Transaction]) -> Result<()> {
     for (i, tx) in transactions.iter().enumerate() {
         writeln!(writer, "# Запись {}", i + 1)?;

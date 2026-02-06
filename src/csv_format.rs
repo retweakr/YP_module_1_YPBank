@@ -11,10 +11,8 @@ pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
     let buf_reader = BufReader::new(reader);
     let mut lines = buf_reader.lines();
 
-    // Пропускаем заголовок (первая строка CSV)
-    // В JS это было бы lines.shift()
     if let Some(header_result) = lines.next() {
-        header_result?; // Проверяем, что строка прочиталась без ошибок
+        header_result?;
     }
 
     for line_result in lines {
@@ -23,15 +21,12 @@ pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
             continue;
         }
 
-        // Разделяем строку по запятой
-        // В Rust это возвращает итератор, который мы превращаем в вектор
         let fields: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
 
         if fields.len() < 8 {
             return Err(ParserError::Format(format!("Недостаточно полей в CSV: {}", line)));
         }
 
-        // DESCRIPTION — последнее поле, в кавычках; может содержать запятые, поэтому объединяем поля 7..]
         let description = fields[7..].join(",").trim_matches('"').trim().to_string();
 
         let tx = Transaction {
@@ -63,7 +58,6 @@ pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
 
 /// Записывает транзакции в CSV поток.
 pub fn write_to<W: Write>(mut writer: W, transactions: &[Transaction]) -> Result<()> {
-    // Пишем заголовок
     writeln!(writer, "TX_ID,TX_TYPE,FROM_USER_ID,TO_USER_ID,AMOUNT,TIMESTAMP,STATUS,DESCRIPTION")?;
 
     for tx in transactions {

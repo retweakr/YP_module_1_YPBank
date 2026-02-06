@@ -43,7 +43,6 @@ fn main() -> Result<()> {
     let in_fmt = input_format.map(|s| s.as_str()).unwrap_or("text");
     let out_fmt = output_format.map(|s| s.as_str()).unwrap_or("text");
 
-    // 1. Читаем данные
     let file = File::open(input_path)?;
     let transactions = match in_fmt {
         "csv" => csv_format::from_read(file)?,
@@ -52,7 +51,6 @@ fn main() -> Result<()> {
         _ => return Err(parser::ParserError::Format(format!("Неизвестный входной формат: {}", in_fmt))),
     };
 
-    // 2. Пишем результат
     let stdout = io::stdout();
     let handle = stdout.lock();
 

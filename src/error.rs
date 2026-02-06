@@ -18,7 +18,6 @@ pub enum ParserError {
     Utf8(std::string::FromUtf8Error),
 }
 
-// Позволяет выводить ошибку в консоль
 impl fmt::Display for ParserError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -30,11 +29,8 @@ impl fmt::Display for ParserError {
     }
 }
 
-// Делает наш тип совместимым со стандартными ошибками Rust
 impl std::error::Error for ParserError {}
 
-// Эти "impl From" позволяют автоматически превращать стандартные ошибки в наши
-// когда мы используем оператор `?`
 impl From<io::Error> for ParserError {
     fn from(error: io::Error) -> Self {
         ParserError::Io(error)

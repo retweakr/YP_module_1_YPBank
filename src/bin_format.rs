@@ -13,11 +13,10 @@ pub fn from_read<R: Read>(mut reader: R) -> Result<Vec<Transaction>> {
     let mut transactions = Vec::new();
 
     loop {
-        // Пытаемся прочитать MAGIC. Если данных больше нет (EOF), выходим из цикла.
         let mut magic_buf = [0u8; 4];
         if let Err(e) = reader.read_exact(&mut magic_buf) {
             if e.kind() == std::io::ErrorKind::UnexpectedEof {
-                break; // Файл закончился
+                break;
             }
             return Err(e.into());
         }
@@ -26,12 +25,9 @@ pub fn from_read<R: Read>(mut reader: R) -> Result<Vec<Transaction>> {
             return Err(ParserError::Format("Неверный заголовок MAGIC".into()));
         }
 
-        // Читаем размер записи (не используем, но он есть в спецификации)
         let mut size_buf = [0u8; 4];
         reader.read_exact(&mut size_buf)?;
-        // let _record_size = u32::from_be_bytes(size_buf);
 
-        // Читаем поля транзакции
         let mut tx_id_buf = [0u8; 8];
         reader.read_exact(&mut tx_id_buf)?;
         let tx_id = u64::from_be_bytes(tx_id_buf);
@@ -70,7 +66,6 @@ pub fn from_read<R: Read>(mut reader: R) -> Result<Vec<Transaction>> {
             _ => return Err(ParserError::Format("Неверный статус в бинарном файле".into())),
         };
 
-        // Читаем описание (сначала длина, потом сами байты)
         let mut desc_len_buf = [0u8; 4];
         reader.read_exact(&mut desc_len_buf)?;
         let desc_len = u32::from_be_bytes(desc_len_buf) as usize;
@@ -97,15 +92,12 @@ pub fn from_read<R: Read>(mut reader: R) -> Result<Vec<Transaction>> {
 /// Записывает список транзакций в бинарный поток.
 pub fn write_to<W: Write>(mut writer: W, transactions: &[Transaction]) -> Result<()> {
     for tx in transactions {
-        // Пишем MAGIC и временный размер (посчитаем ниже)
         writer.write_all(MAGIC)?;
-        
+
         let desc_bytes = tx.description.as_bytes();
-        // Размер тела = фиксированные поля (8+1+8+8+8+8+1+4) + описание
         let body_size = (8 + 1 + 8 + 8 + 8 + 8 + 1 + 4 + desc_bytes.len()) as u32;
         writer.write_all(&body_size.to_be_bytes())?;
 
-        // Пишем поля
         writer.write_all(&tx.tx_id.to_be_bytes())?;
         writer.write_all(&[match tx.tx_type {
             TxType::Deposit => 0,

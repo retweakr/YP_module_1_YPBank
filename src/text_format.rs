@@ -8,30 +8,23 @@ use crate::{Transaction, TxType, TxStatus, Result, ParserError};
 /// Читает транзакции из текстового потока.
 pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
     let mut transactions = Vec::new();
-    
-    // BufReader делает чтение более эффективным (читает не по байту, а кусками)
     let buf_reader = BufReader::new(reader);
     let mut current_block = Vec::new();
 
     for line_result in buf_reader.lines() {
-        // В Rust чтение может вернуть ошибку (например, диск выдернули), 
-        // поэтому используем `?` — если ошибка, выходим из функции и возвращаем её.
         let line = line_result?;
         let trimmed = line.trim();
 
         if trimmed.is_empty() {
-            // Если пустая строка — значит блок закончился, парсим его
             if !current_block.is_empty() {
                 transactions.push(parse_block(&current_block)?);
                 current_block.clear();
             }
         } else if !trimmed.starts_with('#') {
-            // Игнорируем комментарии и собираем строки блока
             current_block.push(line);
         }
     }
 
-    // Не забываем последний блок, если файл не закончился пустой строкой
     if !current_block.is_empty() {
         transactions.push(parse_block(&current_block)?);
     }
@@ -41,8 +34,6 @@ pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
 
 /// Внутренняя функция для превращения списка строк "ключ: значение" в структуру Transaction.
 fn parse_block(lines: &[String]) -> Result<Transaction> {
-    // В JS мы бы создали пустой объект, в Rust мы используем Option, 
-    // чтобы гарантировать, что все поля будут заполнены.
     let mut tx_id = None;
     let mut tx_type = None;
     let mut from_user_id = None;
@@ -53,7 +44,6 @@ fn parse_block(lines: &[String]) -> Result<Transaction> {
     let mut description = None;
 
     for line in lines {
-        // Разделяем строку по первому символу ':'
         let (key, value) = line.split_once(':')
             .ok_or_else(|| ParserError::Format(format!("Неверная строка: {}", line)))?;
         
@@ -79,12 +69,10 @@ fn parse_block(lines: &[String]) -> Result<Transaction> {
                 _ => return Err(ParserError::Format(format!("Неизвестный статус: {}", value))),
             }),
             "DESCRIPTION" => description = Some(value.trim_matches('"').to_string()),
-            _ => {} // Неизвестные поля просто игнорируем
+            _ => {}
         }
     }
 
-    // Собираем структуру. Если какого-то поля не хватает, возвращаем ошибку.
-    // Это гораздо надежнее, чем undefined в JS.
     Ok(Transaction {
         tx_id: tx_id.ok_or_else(|| ParserError::Format("Отсутствует TX_ID".into()))?,
         tx_type: tx_type.ok_or_else(|| ParserError::Format("Отсутствует TX_TYPE".into()))?,
@@ -117,7 +105,7 @@ pub fn write_to<W: Write>(mut writer: W, transactions: &[Transaction]) -> Result
             TxStatus::Pending => "PENDING",
         })?;
         writeln!(writer, "DESCRIPTION: \"{}\"", tx.description)?;
-        writeln!(writer)?; // Пустая строка между блоками
+        writeln!(writer)?;
     }
     Ok(())
 }

@@ -1,16 +1,19 @@
 [package]
 name = "ypbank_tools"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+description = "Библиотека и CLI для парсинга финансовых данных YPBank (CSV, Text, Binary)"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 
 [[bin]]
-name = "converter"
+name = "ypbank_converter"
 path = "src/main.rs"
 
 [[bin]]
-name = "comparer"
+name = "ypbank_compare"
 path = "src/bin/comparer.rs"
 
 [lib]

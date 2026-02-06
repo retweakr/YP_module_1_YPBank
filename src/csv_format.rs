@@ -31,7 +31,9 @@ pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
             return Err(ParserError::Format(format!("Недостаточно полей в CSV: {}", line)));
         }
 
-        // Парсим каждое поле. ? автоматически вернет ошибку, если данные плохие.
+        // DESCRIPTION — последнее поле, в кавычках; может содержать запятые, поэтому объединяем поля 7..]
+        let description = fields[7..].join(",").trim_matches('"').trim().to_string();
+
         let tx = Transaction {
             tx_id: fields[0].parse()?,
             tx_type: match fields[1] {
@@ -50,8 +52,7 @@ pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
                 "PENDING" => TxStatus::Pending,
                 _ => return Err(ParserError::Format(format!("Статус: {}", fields[6]))),
             },
-            // Описание в CSV часто в кавычках, убираем их
-            description: fields[7].trim_matches('"').to_string(),
+            description,
         };
 
         transactions.push(tx);

@@ -1,9 +1,16 @@
+//! Библиотека парсинга и сериализации финансовых данных YPBank.
+//!
+//! Поддерживаются форматы: **YPBankCsv**, **YPBankText**, **YPBankBin**.
+//! Чтение и запись выполняются через трейты [`Read`] и [`Write`] стандартной библиотеки.
+//!
+//! [`Read`]: std::io::Read
+//! [`Write`]: std::io::Write
+
 pub mod error;
 pub mod text_format;
 pub mod csv_format;
 pub mod bin_format;
 
-// Реэкспорт для удобства
 pub use error::{ParserError, Result};
 
 /// Тип финансовой операции.
@@ -102,6 +109,17 @@ mod tests {
     }
 
     #[test]
+    fn test_csv_description_with_comma() -> Result<()> {
+        let data = "TX_ID,TX_TYPE,FROM_USER_ID,TO_USER_ID,AMOUNT,TIMESTAMP,STATUS,DESCRIPTION\n\
+            1,DEPOSIT,0,2,100,1633036800000,SUCCESS,\"Pay, with comma\"";
+        let cursor = Cursor::new(data);
+        let txs = Transaction::from_csv(cursor)?;
+        assert_eq!(txs.len(), 1);
+        assert_eq!(txs[0].description, "Pay, with comma");
+        Ok(())
+    }
+
+    #[test]
     fn test_text_roundtrip() -> Result<()> {
         let txs = create_test_txs();
         let mut buffer = Vec::new();
@@ -139,11 +157,10 @@ mod tests {
         let data = b"NOT_MAGIC_12345678";
         let cursor = Cursor::new(data);
         let result = Transaction::from_bin(cursor);
-        assert!(result.is_err());
-        if let Err(ParserError::Format(msg)) = result {
-            assert!(msg.contains("MAGIC"));
-        } else {
-            panic!("Expected format error");
+        match result {
+            Err(ParserError::Format(msg)) => assert!(msg.contains("MAGIC")),
+            Err(e) => panic!("Expected Format error, got {:?}", e),
+            Ok(_) => panic!("Expected error for invalid MAGIC"),
         }
     }
 
@@ -161,5 +178,22 @@ mod tests {
         let cursor = Cursor::new(data);
         let result = Transaction::from_text(cursor);
         assert!(result.is_err());
+    }
+
+    /// Конвертация через все три формата: CSV → Bin → Text → CSV и сравнение с исходными данными.
+    #[test]
+    fn test_cross_format_roundtrip() -> Result<()> {
+        let txs = create_test_txs();
+        let mut buf = Vec::new();
+        Transaction::to_csv(&mut buf, &txs)?;
+        let from_csv = Transaction::from_csv(Cursor::new(&buf))?;
+        buf.clear();
+        Transaction::to_bin(&mut buf, &from_csv)?;
+        let from_bin = Transaction::from_bin(Cursor::new(&buf))?;
+        buf.clear();
+        Transaction::to_text(&mut buf, &from_bin)?;
+        let from_text = Transaction::from_text(Cursor::new(&buf))?;
+        assert_eq!(txs, from_text);
+        Ok(())
     }
 }

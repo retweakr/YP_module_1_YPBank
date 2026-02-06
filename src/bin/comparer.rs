@@ -52,22 +52,32 @@ fn main() -> Result<()> {
     let txs2 = load_transactions(file2_path, fmt2)?;
 
     if txs1.len() != txs2.len() {
-        println!("Количество транзакций отличается: {} vs {}.", txs1.len(), txs2.len());
+        println!(
+            "The number of transactions differs: {} in first file vs {} in second file.",
+            txs1.len(),
+            txs2.len()
+        );
         return Ok(());
     }
 
     let mut identical = true;
     for (i, (t1, t2)) in txs1.iter().zip(txs2.iter()).enumerate() {
         if t1 != t2 {
-            println!("Транзакция по индексу {} не совпадает:", i);
-            println!("Файл 1: {:?}", t1);
-            println!("Файл 2: {:?}", t2);
+            println!(
+                "Transaction at index {} does not match (TX_ID: {}).",
+                i, t1.tx_id
+            );
+            println!("  File 1: {:?}", t1);
+            println!("  File 2: {:?}", t2);
             identical = false;
         }
     }
 
     if identical {
-        println!("Транзакции в файлах идентичны.");
+        println!(
+            "The transaction records in '{}' and '{}' are identical.",
+            file1_path, file2_path
+        );
     }
 
     Ok(())

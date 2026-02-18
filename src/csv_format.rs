@@ -3,6 +3,25 @@
 use std::io::{BufRead, BufReader, Write, Read};
 use crate::{Transaction, TxType, TxStatus, Result, ParserError};
 
+/// Парсит одну строку CSV с учётом кавычек: внутри "..." запятые не разделяют поля.
+fn parse_csv_line(line: &str) -> Vec<String> {
+    let mut fields = Vec::new();
+    let mut current = String::new();
+    let mut in_quotes = false;
+    for ch in line.chars() {
+        match (in_quotes, ch) {
+            (_, '"') => in_quotes = !in_quotes,
+            (false, ',') => {
+                fields.push(current.trim().to_string());
+                current.clear();
+            }
+            _ => current.push(ch),
+        }
+    }
+    fields.push(current.trim().to_string());
+    fields
+}
+
 /// Читаем CSV: заголовок, затем по строке на транзакцию.
 pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
     let mut transactions = Vec::new();
@@ -19,17 +38,21 @@ pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
             continue;
         }
 
-        let fields: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
+        let fields = parse_csv_line(&line);
 
         if fields.len() < 8 {
             return Err(ParserError::Format(format!("Недостаточно полей в CSV: {}", line)));
         }
 
-        let description = fields[7..].join(",").trim_matches('"').trim().to_string();
+        let description = fields[7]
+            .strip_prefix('"')
+            .and_then(|s| s.strip_suffix('"'))
+            .unwrap_or(&fields[7])
+            .to_string();
 
         let tx = Transaction {
             tx_id: fields[0].parse()?,
-            tx_type: match fields[1] {
+            tx_type: match fields[1].as_str() {
                 "DEPOSIT" => TxType::Deposit,
                 "TRANSFER" => TxType::Transfer,
                 "WITHDRAWAL" => TxType::Withdrawal,
@@ -39,7 +62,7 @@ pub fn from_read<R: Read>(reader: R) -> Result<Vec<Transaction>> {
             to_user_id: fields[3].parse()?,
             amount: fields[4].parse()?,
             timestamp: fields[5].parse()?,
-            status: match fields[6] {
+            status: match fields[6].as_str() {
                 "SUCCESS" => TxStatus::Success,
                 "FAILURE" => TxStatus::Failure,
                 "PENDING" => TxStatus::Pending,

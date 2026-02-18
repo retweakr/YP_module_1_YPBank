@@ -48,8 +48,8 @@ fn main() -> Result<()> {
     let fmt1 = format1.map(|s| s.as_str()).unwrap_or("text");
     let fmt2 = format2.map(|s| s.as_str()).unwrap_or("text");
 
-    let txs1 = load_transactions(file1_path, fmt1)?;
-    let txs2 = load_transactions(file2_path, fmt2)?;
+    let txs1 = load_transactions(file1_path, fmt1, "--file1")?;
+    let txs2 = load_transactions(file2_path, fmt2, "--file2")?;
 
     if txs1.len() != txs2.len() {
         println!(
@@ -83,8 +83,13 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn load_transactions(path: &str, format: &str) -> Result<Vec<Transaction>> {
-    let file = File::open(path)?;
+fn load_transactions(path: &str, format: &str, arg_name: &str) -> Result<Vec<Transaction>> {
+    let file = File::open(path).map_err(|e| {
+        parser::ParserError::Format(format!(
+            "Не удалось открыть файл, указанный в {} '{}': {}",
+            arg_name, path, e
+        ))
+    })?;
     match format {
         "csv" => csv_format::from_read(file),
         "bin" | "binary" => bin_format::from_read(file),

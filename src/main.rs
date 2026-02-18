@@ -43,7 +43,12 @@ fn main() -> Result<()> {
     let in_fmt = input_format.map(|s| s.as_str()).unwrap_or("text");
     let out_fmt = output_format.map(|s| s.as_str()).unwrap_or("text");
 
-    let file = File::open(input_path)?;
+    let file = File::open(input_path).map_err(|e| {
+        parser::ParserError::Format(format!(
+            "Не удалось открыть входной файл (--input) '{}': {}",
+            input_path, e
+        ))
+    })?;
     let transactions = match in_fmt {
         "csv" => csv_format::from_read(file)?,
         "bin" | "binary" => bin_format::from_read(file)?,

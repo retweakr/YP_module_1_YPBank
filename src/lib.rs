@@ -25,7 +25,7 @@ pub enum TxStatus {
     Pending,
 }
 
-/// Транзакция.
+/// Одна транзакция (операция).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Transaction {
     pub tx_id: u64,
@@ -40,25 +40,32 @@ pub struct Transaction {
 }
 
 impl Transaction {
+    /// Читает транзакции из CSV.
     pub fn from_csv<R: std::io::Read>(reader: R) -> Result<Vec<Self>> {
         csv_format::from_read(reader)
     }
 
+    /// Пишет транзакции в CSV.
     pub fn to_csv<W: std::io::Write>(writer: W, transactions: &[Self]) -> Result<()> {
         csv_format::write_to(writer, transactions)
     }
 
+    /// Читает транзакции из бинарного формата.
     pub fn from_bin<R: std::io::Read>(reader: R) -> Result<Vec<Self>> {
         bin_format::from_read(reader)
     }
+
+    /// Пишет транзакции в бинарный формат.
     pub fn to_bin<W: std::io::Write>(writer: W, transactions: &[Self]) -> Result<()> {
         bin_format::write_to(writer, transactions)
     }
 
+    /// Читает транзакции из текстового формата.
     pub fn from_text<R: std::io::Read>(reader: R) -> Result<Vec<Self>> {
         text_format::from_read(reader)
     }
 
+    /// Пишет транзакции в текстовый формат.
     pub fn to_text<W: std::io::Write>(writer: W, transactions: &[Self]) -> Result<()> {
         text_format::write_to(writer, transactions)
     }
@@ -69,6 +76,7 @@ mod tests {
     use super::*;
     use std::io::Cursor;
 
+    /// Набор тестовых транзакций для roundtrip-тестов.
     fn create_test_txs() -> Vec<Transaction> {
         vec![
             Transaction {
@@ -84,6 +92,7 @@ mod tests {
         ]
     }
 
+    /// В CSV описание в кавычках может содержать запятую — пробелы сохраняются.
     #[test]
     fn test_csv_description_with_comma() -> Result<()> {
         let data = "TX_ID,TX_TYPE,FROM_USER_ID,TO_USER_ID,AMOUNT,TIMESTAMP,STATUS,DESCRIPTION\n\
@@ -95,6 +104,7 @@ mod tests {
         Ok(())
     }
 
+    /// Текст: записали — прочитали, данные совпадают.
     #[test]
     fn test_text_roundtrip() -> Result<()> {
         let txs = create_test_txs();
@@ -106,6 +116,7 @@ mod tests {
         Ok(())
     }
 
+    /// CSV: записали — прочитали, данные совпадают.
     #[test]
     fn test_csv_roundtrip() -> Result<()> {
         let txs = create_test_txs();
@@ -117,6 +128,7 @@ mod tests {
         Ok(())
     }
 
+    /// Бинарник: записали — прочитали, данные совпадают.
     #[test]
     fn test_bin_roundtrip() -> Result<()> {
         let txs = create_test_txs();
@@ -128,6 +140,7 @@ mod tests {
         Ok(())
     }
 
+    /// Бинарный файл без правильного MAGIC — должна быть ошибка формата.
     #[test]
     fn test_invalid_magic_bin() {
         let data = b"NOT_MAGIC_12345678";
@@ -140,6 +153,7 @@ mod tests {
         }
     }
 
+    /// В CSV не хватает полей — ожидаем ошибку.
     #[test]
     fn test_csv_missing_fields() {
         let data = "TX_ID,TX_TYPE\n1001,DEPOSIT";
@@ -148,6 +162,7 @@ mod tests {
         assert!(result.is_err());
     }
 
+    /// В текстовом формате нет обязательного поля — ожидаем ошибку.
     #[test]
     fn test_text_missing_required_field() {
         let data = "TX_ID: 1001\nTX_TYPE: DEPOSIT\n\n";
@@ -156,6 +171,7 @@ mod tests {
         assert!(result.is_err());
     }
 
+    /// Конвертация CSV → bin → text: результат совпадает с исходником.
     #[test]
     fn test_cross_format_roundtrip() -> Result<()> {
         let txs = create_test_txs();
